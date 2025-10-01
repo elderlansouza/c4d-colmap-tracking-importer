@@ -94,6 +94,41 @@ Follow these steps extracted from the video transcript to configure and run the 
 ### Troubleshooting (from the video)
 - If the `.BAT` won’t run, confirm the extension isn’t `.BAT.TXT` and that SmartScreen isn’t blocking it.
 - CUDA isn’t required here; the demonstrated workflow runs **CPU‑only** and is still ~4× faster than the older COLMAP‑only setup.
+- If you later import into Blender and see **timing gaps in keyframes**, the video suggests either scaling keyframes by **33%** or importing from `SPARSE/0/` and re‑linking the background image sequence. (Cinema 4D users can skip Blender and use this importer instead.)
+
+---
+
+## How to Use the Importer in Cinema 4D
+1. Launch **Cinema 4D**.
+2. Go to **Extensions → Script Manager → File → Load Script…** and load the Python script `colmap_importer.py`.
+3. Run the script from the **Script Manager** or assign it to a shortcut/menu.
+4. In the importer dialog:
+   - Select your **Scene Folder** (the one containing the `SPARSE` folder and `IMAGES`).
+   - Set **Sensor Width (mm)** (typically 36mm for full-frame cameras).
+   - Enter your project’s **Timeline FPS**.
+   - Adjust **Global Scale** if needed (default: 100).
+   - Optionally, check **Import Sparse Point Cloud**.
+5. Click **OK** to import.
+6. The script will automatically:
+   - Create a **Redshift Camera** with baked animation.
+   - Duplicate it and add a **constraint** for flexibility.
+   - Import the **sparse point cloud**.
+   - Set **scene FPS, timeline, and render resolution**.
+   - Attempt to link the **image sequence** to the camera background.
+7. ⚠️ Remember:
+   - To **see the point cloud in the viewport**, set the **Matrix object Distribution → Vertex** manually.
+   - To **configure the camera background**, do the following manually:
+     - Set **Background → Override** on the RS Camera.
+     - Select the first frame from the project’s `IMAGES` folder.
+     - Change mode from **Image** to **Animation**.
+     - Set **Animation Mode** to **Simple**.
+     - Set **Timing** to **Frame**.
+     - Press **Detect Frames** to load the sequence.
+   - To **adjust the ground plane alignment**, move the **`GLoMap_Import` group**. The **Copy Camera** uses a constraint to follow this transform. If you need to export to other applications, you can bake the Copy Camera’s final transform after alignment.
+
+### Known Bug: Resolution & Background Distortion
+- The scene resolution from COLMAP/GLOMAP isn’t always applied correctly. This causes the background image on the RS Camera to look distorted.
+- **Fix**: Open **Render Settings → Output**, and re‑type the output width or height. This forces Cinema 4D to update the film aspect ratio and restores the correct background image proportions.
 
 ---
 
