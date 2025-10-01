@@ -32,10 +32,15 @@ This Python importer for **Cinema 4D** fills that gap by:
 - Creating a constrained duplicate camera for flexible workflows.
 - Automatically configuring scene FPS, timeline ranges, and render resolution.
 
+⚠️ **Note**: To visualise the point cloud in the Cinema 4D viewport, you must manually set the **Matrix object Distribution to Vertex**.
+
 ## Free Tool & Acknowledgment
-This tool is completely **free**. If you use it in your projects, you **must give credit** to the author (Elderlan Souza) as the creator of the Cinema 4D importer.
+This tool is completely **free**. If you use it in your projects, acknowledging **Elderlan Souza** as the creator of the Cinema 4D importer is greatly appreciated (but not compulsory).
 
 Looking forward to seeing what you’ll create using it! ✨
+
+For **bugs, suggestions, or any other queries**, please feel free to contact me at:  
+📧 **elderlan.design@gmail.com**
 
 ---
 
@@ -94,6 +99,5 @@ Follow these steps extracted from the video transcript to configure and run the 
 ---
 
 ## License
-**Credit is appreciated but not compulsory**: If you use this Software in personal,
-   educational, commercial, or non-commercial projects, acknowledging **Elderlan Souza**
-   as the creator of the "Cinema 4D COLMAP Importer" would be greatly appreciated.
+This importer is released as **free to use and modify**.  
+Credit to **Elderlan Souza** is appreciated but not compulsory when used in projects.
