@@ -1,5 +1,10 @@
 # COLMAP Tracking Importer C4D V1.1 — Readme
 
+## Need help?
+- Found a bug or have a feature request? Please open an **Issue** using the **Issues** tab.
+- For quick questions or suggestions, you can also email me: **elderlan.design@gmail.com**.
+- When filing an issue, include: Cinema 4D version, Redshift version, OS, a short repro, and any console errors.
+
 ## Tutorial
 - Video Tutorial: [How to use COLMAP](https://www.youtube.com/watch?v=PhdEk_RxkGQ)
 
@@ -94,7 +99,6 @@ Follow these steps extracted from the video transcript to configure and run the 
 ### Troubleshooting (from the video)
 - If the `.BAT` won’t run, confirm the extension isn’t `.BAT.TXT` and that SmartScreen isn’t blocking it.
 - CUDA isn’t required here; the demonstrated workflow runs **CPU‑only** and is still ~4× faster than the older COLMAP‑only setup.
-- If you later import into Blender and see **timing gaps in keyframes**, the video suggests either scaling keyframes by **33%** or importing from `SPARSE/0/` and re‑linking the background image sequence. (Cinema 4D users can skip Blender and use this importer instead.)
 
 ---
 
