@@ -94,7 +94,6 @@ Follow these steps extracted from the video transcript to configure and run the 
 ### Troubleshooting (from the video)
 - If the `.BAT` won’t run, confirm the extension isn’t `.BAT.TXT` and that SmartScreen isn’t blocking it.
 - CUDA isn’t required here; the demonstrated workflow runs **CPU‑only** and is still ~4× faster than the older COLMAP‑only setup.
-- If you later import into Blender and see **timing gaps in keyframes**, the video suggests either scaling keyframes by **33%** or importing from `SPARSE/0/` and re‑linking the background image sequence. (Cinema 4D users can skip Blender and use this importer instead.)
 
 ---
 
