@@ -6,10 +6,11 @@
 - When filing an issue, include: Cinema 4D version, Redshift version, OS, a short repro, and any console errors.
 
 ## Tutorial
-- Video Tutorial: [How to use COLMAP](https://www.youtube.com/watch?v=PhdEk_RxkGQ)
+- Installing and using Colmap on Windows: [How to use COLMAP](https://www.youtube.com/watch?v=PhdEk_RxkGQ)
+- Installing Colmap on Mac OS: https://gist.github.com/celestial-33/07438792a11964ee5f6f02847b6dbb03 and https://gist.github.com/celestial-33/a016465fd854d79a1b93458f167baa6a
 
 ## Required Tools & Links
-1️⃣ **COLMAP (v3.12.3)**: Required for its libraries, which GLOMAP utilizes.  
+1️⃣ **COLMAP (v3.12.3)**: Required for its libraries, which GLOMAP utilises.  
 👉 https://github.com/colmap/colmap/releases/tag/3.12.0
 
 2️⃣ **GLOMAP (v1.1.0)**: Faster reconstruction tool. Use the `WINDOWS-NOCUDA` version.  
