@@ -154,6 +154,38 @@ def colmap_to_c4d_matrix(qw,qx,qy,qz, tx,ty,tz):
     Mw = apply_B_to_matrix(M, B_WORLD)
     return right_multiply_flip_y(Mw)
 
+# ---------- Angle unwrapping helpers (keep rotations continuous) ----------
+
+def _unwrap_angle(prev, curr):
+    """
+    Shift 'curr' by +/- 2π so that it stays as close as possible to 'prev'.
+    Works in radians (Cinema 4D's HPB).
+    """
+    if prev is None:
+        return curr
+    twopi = 2.0 * math.pi
+    delta = curr - prev
+    while delta > math.pi:
+        curr -= twopi
+        delta -= twopi
+    while delta <= -math.pi:
+        curr += twopi
+        delta += twopi
+    return curr
+
+def _unwrap_hpb(prev_hpb, curr_hpb):
+    """
+    Unwrap each component of the HPB vector (X=H, Y=P, Z=B) against previous.
+    Returns (unwrapped_hpb, new_prev_hpb)
+    """
+    if prev_hpb is None:
+        return curr_hpb, curr_hpb
+    h = _unwrap_angle(prev_hpb.x, curr_hpb.x)
+    p = _unwrap_angle(prev_hpb.y, curr_hpb.y)
+    b = _unwrap_angle(prev_hpb.z, curr_hpb.z)
+    unwrapped = c4d.Vector(h, p, b)
+    return unwrapped, unwrapped
+
 # ------------------------ Keyframing ------------------------
 
 def _id_pos_x(): return c4d.DescID(c4d.DescLevel(c4d.ID_BASEOBJECT_POSITION, c4d.DTYPE_VECTOR, 0), c4d.DescLevel(c4d.VECTOR_X, c4d.DTYPE_REAL, 0))
@@ -184,13 +216,30 @@ def bake_keys_to_camera(cam, keyframes, sensor_mm):
     tr_px = ensure_track(cam, _id_pos_x()); tr_py = ensure_track(cam, _id_pos_y()); tr_pz = ensure_track(cam, _id_pos_z())
     tr_h  = ensure_track(cam, _id_rot_h()); tr_p  = ensure_track(cam, _id_rot_p());  tr_b  = ensure_track(cam, _id_rot_b())
     tr_f  = ensure_track(cam, _id_focus())
+
+    prev_hpb = None  # track previous (already unwrapped) angles
+
     for t, mg, fl_mm in keyframes:
+        # Preserve existing behavior for transform/focus/aperture
         cam.SetMg(mg)
         cam[c4d.CAMERAOBJECT_FOCUS]    = fl_mm
         cam[c4d.CAMERAOBJECT_APERTURE] = sensor_mm
-        hpb = utils.MatrixToHPB(mg, c4d.ROTATIONORDER_DEFAULT)
-        insert_key(tr_px, t, mg.off.x); insert_key(tr_py, t, mg.off.y); insert_key(tr_pz, t, mg.off.z)
-        insert_key(tr_h,  t, hpb.x);    insert_key(tr_p,  t, hpb.y);    insert_key(tr_b,  t, hpb.z)
+
+        # Convert to HPB (radians), then unwrap to avoid 360° jumps
+        hpb_raw = utils.MatrixToHPB(mg, c4d.ROTATIONORDER_DEFAULT)
+        hpb_unwrapped, prev_hpb = _unwrap_hpb(prev_hpb, hpb_raw)
+
+        # Key position
+        insert_key(tr_px, t, mg.off.x)
+        insert_key(tr_py, t, mg.off.y)
+        insert_key(tr_pz, t, mg.off.z)
+
+        # Key rotation (unwrapped)
+        insert_key(tr_h,  t, hpb_unwrapped.x)
+        insert_key(tr_p,  t, hpb_unwrapped.y)
+        insert_key(tr_b,  t, hpb_unwrapped.z)
+
+        # Key focus
         insert_key(tr_f,  t, fl_mm)
 
 # ------------------------ Redshift camera discovery ------------------------
