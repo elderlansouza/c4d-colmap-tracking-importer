@@ -1,4 +1,4 @@
-# COLMAP Tracking Importer C4D V1.1 — Readme
+# COLMAP Tracking Importer C4D V1.2 — Readme
 
 ## Need help?
 - Found a bug or have a feature request? Please open an **Issue** using the **Issues** tab.
