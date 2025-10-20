@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # COLMAP/GLoMap (TXT) -> Redshift Camera + Matrix-on-Vertices (no Cloner/TP) in Cinema 4D
-# Latest stable: V1.1 (no background auto-assign)
+# Version: V1.3.2 (Compact UI only; same functionality as V1.3)
 # - Imports COLMAP TXT from scene/sparse[/model_id].
 # - Builds Redshift Camera with baked PSR+focal keys.
 # - Fixed axes:
@@ -189,18 +189,12 @@ def _unwrap_hpb(prev_hpb, curr_hpb):
 # ------------------------ Keyframing ------------------------
 
 def _id_pos_x(): return c4d.DescID(c4d.DescLevel(c4d.ID_BASEOBJECT_POSITION, c4d.DTYPE_VECTOR, 0), c4d.DescLevel(c4d.VECTOR_X, c4d.DTYPE_REAL, 0))
-
 def _id_pos_y(): return c4d.DescID(c4d.DescLevel(c4d.ID_BASEOBJECT_POSITION, c4d.DTYPE_VECTOR, 0), c4d.DescLevel(c4d.VECTOR_Y, c4d.DTYPE_REAL, 0))
-
 def _id_pos_z(): return c4d.DescID(c4d.DescLevel(c4d.ID_BASEOBJECT_POSITION, c4d.DTYPE_VECTOR, 0), c4d.DescLevel(c4d.VECTOR_Z, c4d.DTYPE_REAL, 0))
-
 def _id_rot_h(): return c4d.DescID(c4d.DescLevel(c4d.ID_BASEOBJECT_ROTATION, c4d.DTYPE_VECTOR, 0), c4d.DescLevel(c4d.VECTOR_X, c4d.DTYPE_REAL, 0))
-
 def _id_rot_p(): return c4d.DescID(c4d.DescLevel(c4d.ID_BASEOBJECT_ROTATION, c4d.DTYPE_VECTOR, 0), c4d.DescLevel(c4d.VECTOR_Y, c4d.DTYPE_REAL, 0))
-
 def _id_rot_b(): return c4d.DescID(c4d.DescLevel(c4d.ID_BASEOBJECT_ROTATION, c4d.DTYPE_VECTOR, 0), c4d.DescLevel(c4d.VECTOR_Z, c4d.DTYPE_REAL, 0))
-
-def _id_focus(): return c4d.DescID(c4d.DescLevel(c4d.CAMERAOBJECT_FOCUS, c4d.DTYPE_REAL, 0))
+def _id_focus():  return c4d.DescID(c4d.DescLevel(c4d.CAMERAOBJECT_FOCUS, c4d.DTYPE_REAL, 0))
 
 def ensure_track(op, did):
     tr = op.FindCTrack(did)
@@ -266,8 +260,8 @@ def import_point_cloud(doc, points, parent=None):
     pts_c4d = [apply_B_to_vec(c4d.Vector(x,y,z), B_WORLD) for (x,y,z) in points]
     obj = c4d.PolygonObject(len(pts_c4d), 0)
     obj.SetName("GLoMap_SparseCloud")
-    obj.SetAllPoints(pts_c4d)
     (obj.InsertUnder(parent) if parent else doc.InsertObject(obj))
+    obj.SetAllPoints(pts_c4d)
     obj.Message(c4d.MSG_UPDATE)
     return obj
 
@@ -283,7 +277,7 @@ def add_matrix_on_sparse_vertices(doc, sparse_obj, parent=None):
         return None
 
     mtx = c4d.BaseObject(c4d.Omgmatrix)
-    mtx.SetName("Matrix_SparseVertices")
+    mtx.SetName("SparceCloud_Matrix_Previs")
     (mtx.InsertUnder(parent) if parent else doc.InsertObject(mtx))
 
     def DID(i, dtype, creator):
@@ -404,52 +398,109 @@ class ImportDialog(gui.GeDialog):
     ID_SCALE       = 1005
     ID_POINTS      = 1006
 
+    # Preset dropdown id
+    ID_FPS_PRESET  = 1010
+
+    # Mapping preset labels -> integer timeline fps (keeps existing BaseTime workflow)
+    _FPS_PRESETS = [
+        (0,   "23.98", 24),
+        (1,   "24",    24),
+        (2,   "25",    25),
+        (3,   "29.97", 30),
+        (4,   "30",    30),
+        (5,   "48",    48),
+        (6,   "50",    50),
+        (7,   "59.94", 60),
+        (8,   "60",    60),
+        (9,   "100",   100),
+        (10,  "120",   120),
+        (999, "Custom", None),
+    ]
+
+    def _add_fps_preset_combo(self):
+        self.AddComboBox(self.ID_FPS_PRESET, c4d.BFH_LEFT, initw=110, inith=0)
+        for pid, label, _val in self._FPS_PRESETS:
+            self.AddChild(self.ID_FPS_PRESET, pid, label)
+
+    def _apply_preset_to_spinner(self, pid):
+        # If preset has a mapped integer value, set the existing spinner (ID_FPS).
+        for _pid, _label, _val in self._FPS_PRESETS:
+            if _pid == pid:
+                if _val is not None:
+                    self.SetInt32(self.ID_FPS, int(_val), min=1, max=240, step=1)
+                # If Custom: do nothing (user can type their own in the spinner).
+                return
+
     def CreateLayout(self):
-        # Title updated per request
-        self.SetTitle("COLMAP Tracking Importer C4D V1.1")
-        self.GroupBegin(10, c4d.BFH_SCALEFIT, 3, 1)
-        self.AddStaticText(11, c4d.BFH_LEFT, 260, 0, "Scene folder (contains 'sparse'):")
-        self.AddEditText(self.ID_SCENEFOLDER, c4d.BFH_SCALEFIT, 520, 0)
-        self.AddButton(self.ID_BTN_BROWSE, c4d.BFH_LEFT, 100, 0, "Browse…")
-        self.GroupEnd()
+        # Title
+        self.SetTitle("COLMAP Tracking Importer C4D V1.3")
 
+        # --- SCENE folder ---
+        self.GroupBegin(10, c4d.BFH_SCALEFIT, 2, 1)
+        self.AddStaticText(11, c4d.BFH_LEFT, 120, 0, "SCENE folder:")
+        self.GroupBegin(12, c4d.BFH_SCALEFIT, 2, 1)
+        self.AddEditText(self.ID_SCENEFOLDER, c4d.BFH_SCALEFIT, 250, 0)
+        self.AddButton(self.ID_BTN_BROWSE, c4d.BFH_LEFT, 70, 0, "Browse…")
+        self.GroupEnd()
+        self.GroupEnd()
+        self.AddSeparatorH(0, c4d.BFH_SCALEFIT)
+
+        # --- Sensor width ---
         self.GroupBegin(20, c4d.BFH_SCALEFIT, 2, 1)
-        self.AddStaticText(21, c4d.BFH_LEFT, 220, 0, "Sensor width (mm):")
-        self.AddEditNumberArrows(self.ID_SENSOR, c4d.BFH_LEFT)
+        self.AddStaticText(21, c4d.BFH_LEFT, 120, 0, "Sensor width:")
+        self.AddEditNumberArrows(self.ID_SENSOR, c4d.BFH_LEFT, 90, 0)
         self.GroupEnd()
 
-        self.GroupBegin(30, c4d.BFH_SCALEFIT, 2, 1)
-        self.AddStaticText(31, c4d.BFH_LEFT, 220, 0, "Timeline FPS:")
-        self.AddEditNumberArrows(self.ID_FPS, c4d.BFH_LEFT)
+        # --- FPS combo + spinner ---
+        self.GroupBegin(30, c4d.BFH_SCALEFIT, 3, 1)
+        self.AddStaticText(31, c4d.BFH_LEFT, 120, 0, "Video FPS:")
+        self._add_fps_preset_combo()
+        self.AddEditNumberArrows(self.ID_FPS, c4d.BFH_LEFT, 70, 0)
         self.GroupEnd()
 
+        # --- Global scale ---
         self.GroupBegin(40, c4d.BFH_SCALEFIT, 2, 1)
-        self.AddStaticText(41, c4d.BFH_LEFT, 220, 0, "Global scale (scene units):")
-        self.AddEditNumberArrows(self.ID_SCALE, c4d.BFH_LEFT)
+        self.AddStaticText(41, c4d.BFH_LEFT, 120, 0, "Global scale:")
+        self.AddEditNumberArrows(self.ID_SCALE, c4d.BFH_LEFT, 90, 0)
         self.GroupEnd()
 
+        # --- Checkbox ---
         self.AddCheckbox(self.ID_POINTS, c4d.BFH_LEFT, 0, 0, "Import sparse point cloud")
 
+        # --- Buttons ---
         self.AddSeparatorH(0, c4d.BFH_SCALEFIT)
-        self.GroupBegin(200, c4d.BFH_RIGHT, 2, 1)
+        self.GroupBegin(200, c4d.BFH_CENTER, 2, 1)
         self.AddDlgGroup(c4d.DLG_OK | c4d.DLG_CANCEL)
         self.GroupEnd()
 
-        # Footer copyright line (added per request)
+        # --- Footer ---
         self.AddSeparatorH(0, c4d.BFH_SCALEFIT)
-        self.AddStaticText(300, c4d.BFH_CENTER, 0, 0, "Copyright: Elderlan Souza  •  email: elderlan.design@gmail.com")
+        self.AddStaticText(300, c4d.BFH_CENTER, 0, 0, "© Elderlan Souza  •  elderlan.design@gmail.com")
 
+        # --- Defaults ---
         fps = doc.GetFps() if doc else 24
         self.SetFloat(self.ID_SENSOR, 36.0, min=1.0, max=100.0, step=0.1)
         self.SetInt32(self.ID_FPS, fps, min=1, max=240, step=1)
         self.SetFloat(self.ID_SCALE, 100.0, min=0.0001, max=100000.0, step=0.1)
         self.SetBool(self.ID_POINTS, True)
+
+        # Initialize preset selection to best match current timeline fps
+        init_pid = 999
+        for pid, _label, val in self._FPS_PRESETS:
+            if val is not None and int(val) == int(fps):
+                init_pid = pid
+                break
+        self.SetInt32(self.ID_FPS_PRESET, init_pid)
+
         return True
 
     def Command(self, cid, msg):
         if cid == self.ID_BTN_BROWSE:
             p = c4d.storage.LoadDialog(flags=c4d.FILESELECT_DIRECTORY, title="Select Scene Folder")
             if p: self.SetString(self.ID_SCENEFOLDER, p)
+        elif cid == self.ID_FPS_PRESET:
+            pid = self.GetInt32(self.ID_FPS_PRESET)
+            self._apply_preset_to_spinner(pid)
         elif cid == c4d.DLG_OK:
             self.do_import(); self.Close()
         elif cid == c4d.DLG_CANCEL:
@@ -468,7 +519,7 @@ class ImportDialog(gui.GeDialog):
             return
 
         sensor_mm = self.GetFloat(self.ID_SENSOR)
-        fps       = self.GetInt32(self.ID_FPS)
+        fps       = self.GetInt32(self.ID_FPS)  # unchanged: integer timeline FPS
         scale     = self.GetFloat(self.ID_SCALE)
         do_points = self.GetBool(self.ID_POINTS)
 
@@ -481,7 +532,8 @@ class ImportDialog(gui.GeDialog):
 
         doc.StartUndo()
         try:
-            root = ensure_null(doc, "GLoMap_Import")
+            # Renamed root group
+            root = ensure_null(doc, "GLoMap_Scene_Orient")
 
             # Timeline
             if fps > 0: doc.SetFps(fps)
@@ -519,7 +571,7 @@ class ImportDialog(gui.GeDialog):
                 return
 
             rs_cam = c4d.BaseObject(rs_id)
-            rs_cam.SetName("RS Camera [Fixed Flip Y / local Flip Y]")
+            rs_cam.SetName("RS_GLoMap_Animated_Camera")  # renamed
             rs_cam.InsertUnder(root)
             bake_keys_to_camera(rs_cam, keyframes, sensor_mm)
 
@@ -527,7 +579,7 @@ class ImportDialog(gui.GeDialog):
             dup_cam = None
             try:
                 dup_cam = rs_cam.GetClone()
-                dup_cam.SetName("Copy_" + rs_cam.GetName())
+                dup_cam.SetName("RS_GLoMap_Render_Camera")  # renamed
                 doc.InsertObject(dup_cam)  # at scene root
 
                 setup_constraint_follow(dup_cam, rs_cam)
@@ -535,7 +587,7 @@ class ImportDialog(gui.GeDialog):
             except Exception as e:
                 gui.MessageDialog(f"Camera duplication/constraint failed: {e}")
 
-            # ---------- Render Output (resolution, preview range, film aspect custom) ----------
+            # ---------- Render Output ----------
             res_w = res_h = None
             try:
                 if imgs:
@@ -588,13 +640,14 @@ class ImportDialog(gui.GeDialog):
             "Scene import successful\n"
             f"Resolution: {res_text}\n"
             f"Duration: {n} frames\n"
-            "To visualise the point cloud, select the Matrix object and change the Distribution to Vertex."
+            "To visualise the point cloud, select the 'SparceCloud_Matrix_Previs' object and set Distribution to Vertex."
         )
 
 # ------------------------ Main ------------------------
 
 def main():
-    ImportDialog().Open(c4d.DLG_TYPE_MODAL, defaultw=860, defaulth=0)
+    # Compact width by default
+    ImportDialog().Open(c4d.DLG_TYPE_MODAL, defaultw=350, defaulth=0)
 
 if __name__ == "__main__":
     main()
